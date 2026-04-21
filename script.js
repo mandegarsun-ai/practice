@@ -1,10 +1,23 @@
+const API = 'http://127.0.0.1:3000/api';
+
+async function loadStats() {
+  try {
+    const res = await fetch(API + '/stats');
+    const data = await res.json();
+    const t = document.getElementById('totalChats');
+    const r = document.getElementById('resolvedToday');
+    if(t) t.textContent = data.total_chats;
+    if(r) r.textContent = data.resolved;
+  } catch(e) { console.log('API error', e); }
+}
+
 /* ── Screens ── */
 function showScreen(n) {
   ['loginScreen', 'signupScreen'].forEach(id => document.getElementById(id).classList.remove('active'));
   document.getElementById('dashboard').classList.remove('active');
   if (n === 'login')  document.getElementById('loginScreen').classList.add('active');
   if (n === 'signup') document.getElementById('signupScreen').classList.add('active');
-  if (n === 'dash')   document.getElementById('dashboard').classList.add('active');
+  if (n === 'dash')   { document.getElementById('dashboard').classList.add('active'); loadStats(); }
 }
 
 /* ── Login ── */
