@@ -1,0 +1,6 @@
+{
+  "root": "frontend",
+  "port": 8080,
+  "open": true,
+  "ignore": "backend,node_modules,.git"
+}

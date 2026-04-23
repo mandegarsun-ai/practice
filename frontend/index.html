@@ -2981,20 +2981,20 @@ function openTicketDetail(id) {
     <div class="td-close" onclick="closeTicketDetail()"><i data-lucide="x"></i></div>
   `;
 
-  const timeline = TK_TIMELINES[t.id] || [{ text: `<strong>${t.client}</strong> opened ticket`, time: t.date }];
+  _tdTicket = t;
+  const timeline = TK_TIMELINES[t.id] || [{ text: `<strong>${escHtml(t.client)}</strong> opened ticket`, time: t.date }];
+  _tdTimeline = [...timeline];
+
   document.getElementById('tdBody').innerHTML = `
     <div class="td-meta-grid">
       <div class="td-meta-item">
         <div class="td-meta-lbl">Client</div>
-        <div class="td-meta-val"><div style="width:20px;height:20px;border-radius:6px;background:${t.grad};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:white;flex-shrink:0">${t.avatar}</div>${t.client}</div>
+        <div class="td-meta-val"><div style="width:20px;height:20px;border-radius:6px;background:${t.grad};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:white;flex-shrink:0">${t.avatar}</div>${escHtml(t.client)}</div>
       </div>
-      <div class="td-meta-item">
-        <div class="td-meta-lbl">Account</div>
-        <div class="td-meta-val" style="font-family:'Syne',sans-serif;font-size:12px">${t.acct}</div>
-      </div>
+      ${t.acct ? `<div class="td-meta-item"><div class="td-meta-lbl">Account</div><div class="td-meta-val" style="font-family:'Syne',sans-serif;font-size:12px">${escHtml(t.acct)}</div></div>` : ''}
       <div class="td-meta-item">
         <div class="td-meta-lbl">Assigned To</div>
-        <div class="td-meta-val">${t.assigned}</div>
+        <div class="td-meta-val">${escHtml(t.assigned)}</div>
       </div>
       <div class="td-meta-item">
         <div class="td-meta-lbl">Status</div>
@@ -3011,11 +3011,11 @@ function openTicketDetail(id) {
     </div>
 
     <div class="td-section-title">Notes</div>
-    <div class="td-notes">${escHtml(t.notes)}</div>
+    <div class="td-notes">${escHtml(t.notes || 'No notes available.')}</div>
 
     <div class="td-section-title">Activity</div>
-    <div class="td-timeline">
-      ${timeline.map(e => `
+    <div class="td-timeline" id="tdTimeline">
+      ${_tdTimeline.map(e => `
         <div class="td-event">
           <div class="td-event-line"><div class="td-event-dot"></div><div class="td-event-connector"></div></div>
           <div class="td-event-content">
@@ -3025,14 +3025,23 @@ function openTicketDetail(id) {
         </div>
       `).join('')}
     </div>
+
+    <div id="tdReplyBox" style="display:none;margin-top:16px;padding:14px;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:var(--radius-sm)">
+      <textarea id="tdReplyText" placeholder="Write your reply…" rows="3"
+        style="width:100%;background:transparent;border:none;color:var(--text-primary);font-size:13px;font-family:'DM Sans',sans-serif;resize:vertical;outline:none;box-sizing:border-box"></textarea>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+        <button class="td-action-btn td-btn-ghost" style="padding:6px 14px;font-size:12px" onclick="closeTdReply()">Cancel</button>
+        <button class="td-action-btn td-btn-primary" style="padding:6px 14px;font-size:12px" onclick="sendTdReply()"><i data-lucide="send"></i> Send Reply</button>
+      </div>
+    </div>
   `;
 
   document.getElementById('tdFooter').innerHTML = `
-    <button class="td-action-btn td-btn-primary"><i data-lucide="message-circle"></i> Reply</button>
-    ${t.status !== 'resolved' ? `<button class="td-action-btn td-btn-resolve"><i data-lucide="check-circle"></i> Mark Resolved</button>` : ''}
+    <button class="td-action-btn td-btn-primary" onclick="openTdReply()"><i data-lucide="message-circle"></i> Reply</button>
+    ${t.status !== 'resolved' ? `<button class="td-action-btn td-btn-resolve" onclick="markTkResolved()"><i data-lucide="check-circle"></i> Mark Resolved</button>` : ''}
     <button class="td-action-btn td-btn-ghost"><i data-lucide="user-plus"></i> Assign</button>
     <div class="td-spacer"></div>
-    <button class="td-action-btn td-btn-danger"><i data-lucide="trash-2"></i> Close</button>
+    <button class="td-action-btn td-btn-danger" onclick="closeTicketDetail()"><i data-lucide="x"></i> Close</button>
   `;
 
   document.getElementById('tdOverlay').classList.add('open');
@@ -3040,9 +3049,68 @@ function openTicketDetail(id) {
   lucide.createIcons();
 }
 
+let _tdTicket   = null;
+let _tdTimeline = [];
+
 function closeTicketDetail() {
   document.getElementById('tdOverlay').classList.remove('open');
   document.getElementById('tdModal').classList.remove('open');
+  _tdTicket = null;
+}
+
+function openTdReply() {
+  const box = document.getElementById('tdReplyBox');
+  if (!box) return;
+  box.style.display = 'block';
+  document.getElementById('tdReplyText').focus();
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  lucide.createIcons();
+}
+
+function closeTdReply() {
+  const box = document.getElementById('tdReplyBox');
+  if (box) { box.style.display = 'none'; document.getElementById('tdReplyText').value = ''; }
+}
+
+function sendTdReply() {
+  const txt = (document.getElementById('tdReplyText').value || '').trim();
+  if (!txt) return;
+  const agentName = document.getElementById('hName').textContent || 'Agent';
+  const now       = new Date();
+  const timeStr   = now.toLocaleDateString('en-US', { month:'short', day:'numeric' }) + ' · ' +
+                    now.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+  _tdTimeline.push({ text: `<strong>${escHtml(agentName)}</strong> replied: "${escHtml(txt)}"`, time: timeStr });
+  const tl = document.getElementById('tdTimeline');
+  if (tl) {
+    tl.innerHTML = _tdTimeline.map(e => `
+      <div class="td-event">
+        <div class="td-event-line"><div class="td-event-dot"></div><div class="td-event-connector"></div></div>
+        <div class="td-event-content">
+          <div class="td-event-text">${e.text}</div>
+          <div class="td-event-time">${e.time}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  closeTdReply();
+}
+
+function markTkResolved() {
+  if (!_tdTicket) return;
+  const id = _tdTicket.id;
+  if (liveTickets) {
+    fetch(`${API}/tickets/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'resolved' })
+    }).then(r => r.json()).then(d => {
+      if (d.success) { loadTickets(); closeTicketDetail(); }
+    }).catch(() => {});
+  } else {
+    const t = TICKETS.find(x => x.id === id);
+    if (t) t.status = 'resolved';
+    closeTicketDetail();
+    renderTicketsTable();
+  }
 }
 
 /* ── Ticket CRUD form ── */

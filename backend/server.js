@@ -11,7 +11,7 @@ const SALT_ROUNDS = 10;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../frontend')));
+
 
 const pool = new Pool({
   host:     process.env.DB_HOST,
@@ -193,5 +193,7 @@ app.get('/api/stats', async (req, res) => {
     return err(res, 'Failed to fetch stats.', 500);
   }
 });
+
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
