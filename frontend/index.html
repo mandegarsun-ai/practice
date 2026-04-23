@@ -2759,7 +2759,7 @@ async function doLogin() {
     showScreen('dash');
     setTimeout(showToast, 3000);
   } catch(e) {
-    errEl.textContent = 'Cannot reach server. Is it running?';
+    errEl.textContent = 'Server is offline.';
     errEl.classList.add('show');
   }
 }
@@ -2787,7 +2787,7 @@ async function doSignup() {
     okEl.classList.add('show');
     setTimeout(() => { okEl.classList.remove('show'); showScreen('login'); }, 1600);
   } catch(e) {
-    errEl.textContent = 'Cannot reach server. Is it running?';
+    errEl.textContent = 'Server is offline.';
     errEl.classList.add('show');
   }
 }
@@ -3114,7 +3114,7 @@ async function submitTkForm() {
     closeTkForm();
     await loadTickets();
   } catch(e) {
-    errEl.textContent   = 'Cannot reach server.';
+    errEl.textContent   = 'Server is offline.';
     errEl.style.display = 'block';
   } finally {
     btn.disabled    = false;
@@ -3131,7 +3131,7 @@ async function deleteTicket(id) {
     if (data.success) await loadTickets();
     else alert(data.message || 'Delete failed.');
   } catch(e) {
-    alert('Cannot reach server.');
+    alert('Server is offline.');
   }
 }
 
