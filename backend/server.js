@@ -1,3 +1,4 @@
+const jwt = require("jsonwebtoken");
 const express = require('express');
 const cors    = require('cors');
 const bcrypt  = require('bcrypt');
@@ -84,7 +85,8 @@ app.post('/api/auth/login', async (req, res) => {
       return err(res, 'Incorrect password', 401);
     }
 
-    return ok(res, { name: user.name, role: user.role }, 'Login successful');
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, 'oposecret123', { expiresIn: '7d' });
+    return ok(res, { token, name: user.name, role: user.role }, 'Login successful');
   } catch (e) {
     console.error('login error:', e.message);
     return err(res, 'Login failed. Please try again.', 500);
